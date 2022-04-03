@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, JSON, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from app.db.core import Base
 
 
@@ -9,11 +9,19 @@ class Respondent(Base):
     username = Column(String)
     first_name = Column(String)
     last_name = Column(String)
-    full_name = Column(String)
-
-    def __repr__(self):
-        return f"<User(id={self.id}, first_name={self.first_name}, last_name={self.last_name}, full_name={self.full_name})>"
 
 
-# class Questions(Base):
-#     __tablename__ = 'questions'
+class Answer(Base):
+    __tablename__ = 'answers'
+    id = Column(Integer, primary_key=True)
+    respondent_id = Column(ForeignKey('respondents.id'))
+    form_id = Column(ForeignKey('forms.id'))
+    answer = Column(JSON)
+
+
+class Form(Base):
+    __tablename__ = 'forms'
+    id = Column(Integer, primary_key=True)
+    form = Column(JSON)
+    active = Column(Boolean, default=True)
+    count = Column(Integer)
