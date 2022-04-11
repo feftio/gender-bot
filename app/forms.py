@@ -1,11 +1,10 @@
 from typing import Dict, List, Tuple
 
-ans: Tuple[str, ...] = ['Да', 'Нет', '']
+ans: Tuple[str, ...] = ['Да', 'Нет', 'Затрудняюсь ответить']
 
-
-questions: Dict[str, List[str]] = {
+form: Dict[str, List[str]] = {
     'Укажите Ваш пол?': ['Мужчина', 'Женщина'],
-    'Укажите Ваш возраст?': ['От 16-25', '26-45', '46 и выше'],
+    'Укажите Ваш возраст?': ['От 16-25', '26-45', '46 и выше'], # last variant was changed
     'Часто ли Вы боитесь выразить вслух свои мысли, желания, опасения в разговоре с партнером?': ans,
     'Случаются ли у Вашего партнера неконтролируемые и беспричинные вспышки гнева?': ans,
     'Оказываетесь ли Вы виноватой(-ым) и извиняетесь даже тогда, когда знаете, что не сделали ничего дурного?': ans,
@@ -18,5 +17,5 @@ questions: Dict[str, List[str]] = {
 }
 
 if __name__ == '__main__':
-    for question in questions:
-        print(question)
+    for question, answers in form.items():
+        print(question, answers)
