@@ -1,31 +1,40 @@
-from venv import create
 import telebot
 import telebot.types as t
 from app import config
+from app.forms import form as form_body
+from app.db.core import engine, Base
 from app.utils.decorators import init_decorators
-from app.db.operations import create_answer, create_respondent, get_question, init_db, get_answer, update_answer
-from app.db.tables import Form, Respondent
-from app.utils.template import Template
+from app.db.tables import Respondent, Answer, Form
 from app.utils.buttons import inline_markup, reply_markup
-from app.db.core import Session
-from sqlalchemy import select
+from app.utils.template import Template
 
-init_db()
+
+""" Database init """
+Base.metadata.create_all(engine, checkfirst=True)
+Form.create(name='Form Name', body=form_body)
+
+
+""" Bot init """
 bot = init_decorators(telebot.TeleBot(config.TOKEN, parse_mode='HTML'))
-current_form_id = 1
+current_form_id = Form.get_by_name('Form Name').id
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call: t.CallbackQuery):
     if '|' in call.data:
         q, a = call.data.split('|')
-        update_answer(call.from_user.id, current_form_id, {q: a})
+        Answer.update(call.from_user.id, current_form_id, {q: a})
 
-    answer = get_answer(call.from_user.id, current_form_id)
-    for question_index, variant in answer.items():
-        if variant is None:
-            question, variants = get_question(
-                current_form_id, call.from_user.id, question_index)
+    answer_body = Answer.get(
+        respondent_id=call.from_user.id,
+        form_id=current_form_id
+    ).body
+    for question_index, variant_index in answer_body.items():
+        if variant_index is None:
+            question, variants = Form.get_question(
+                form_id=current_form_id,
+                question_index=question_index
+            )
             _variants = []
             for i in range(len(variants)):
                 _variants.append((variants[i], f'{question_index}|{i}'))
@@ -39,8 +48,13 @@ def callback_query(call: t.CallbackQuery):
 
 @bot.message_handler(commands=['start'])
 def start(message: t.Message):
-    create_respondent(message)
-    create_answer(
+    Respondent.create(
+        respondent_id=message.from_user.id,
+        username=message.from_user.username,
+        first_name=message.from_user.first_name,
+        last_name=message.from_user.last_name
+    )
+    Answer.create_empty(
         respondent_id=message.from_user.id,
         form_id=current_form_id
     )
@@ -51,19 +65,14 @@ def start(message: t.Message):
     )
 
 
-# Don't touch
-
-
 @bot.message_handler(commands=['words'])
 def words(message: t.Message):
     words = Template.list('words')
     return bot.send_message(
         chat_id=message.chat.id,
-        text='- ' + '\n- '.join(words),
+        text='🧩 ' + '\n🧩 '.join(words),
         reply_markup=reply_markup(words)
     )
-
-# Don't touch
 
 
 @bot.message_handler(content_types=['text'])
